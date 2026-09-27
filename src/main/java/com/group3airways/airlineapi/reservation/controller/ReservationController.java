@@ -15,6 +15,9 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/api/reservations")
@@ -31,35 +34,50 @@ public class ReservationController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ReservationResponse createReservation(
-            @RequestBody CreateReservationRequest request
+            @RequestBody CreateReservationRequest request,
+            HttpServletRequest servletRequest
     ) {
+        if (request.userEmail() == null || !request.userEmail().equalsIgnoreCase(currentEmail(servletRequest))) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Reservation owner does not match signed-in user");
+        }
         return reservationService.createReservation(request);
     }
 
     @GetMapping
     public List<ReservationResponse> getReservationsForUser(
-            @RequestParam String userEmail
+            HttpServletRequest servletRequest
     ) {
-        return reservationService.getReservationsForUser(userEmail);
+        return reservationService.getReservationsForUser(currentEmail(servletRequest));
     }
 
     @GetMapping("/{confirmationNumber}")
     public ReservationResponse getReservation(
-            @PathVariable String confirmationNumber
+            @PathVariable String confirmationNumber,
+            HttpServletRequest servletRequest
     ) {
-        return reservationService.getReservation(
-                confirmationNumber
-        );
+        ReservationResponse reservation = reservationService.getReservation(confirmationNumber);
+        if (!reservation.userEmail().equalsIgnoreCase(currentEmail(servletRequest))) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Reservation not found");
+        }
+        return reservation;
     }
 
     @PatchMapping("/{confirmationNumber}/cancel")
     public ReservationResponse cancelReservation(
             @PathVariable String confirmationNumber,
-            @RequestParam String userEmail
+            HttpServletRequest servletRequest
     ) {
         return reservationService.cancelReservation(
                 confirmationNumber,
-                userEmail
+                currentEmail(servletRequest)
         );
+    }
+
+    private String currentEmail(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        if (session == null || !(session.getAttribute("userEmail") instanceof String email)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Please sign in");
+        }
+        return email;
     }
 }

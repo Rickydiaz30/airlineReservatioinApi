@@ -5,6 +5,8 @@ import com.group3airways.airlineapi.auth.dto.RegisterRequest;
 import com.group3airways.airlineapi.auth.dto.UserResponse;
 import com.group3airways.airlineapi.auth.service.AuthService;
 import jakarta.validation.Valid;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -25,15 +27,34 @@ public class AuthController {
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
     public UserResponse register(
-            @Valid @RequestBody RegisterRequest request
+            @Valid @RequestBody RegisterRequest request,
+            HttpServletRequest servletRequest
     ) {
-        return authService.register(request);
+        UserResponse user = authService.register(request);
+        startSession(servletRequest, user.email());
+        return user;
     }
 
     @PostMapping("/login")
     public UserResponse login(
-            @Valid @RequestBody LoginRequest request
+            @Valid @RequestBody LoginRequest request,
+            HttpServletRequest servletRequest
     ) {
-        return authService.login(request);
+        UserResponse user = authService.login(request);
+        startSession(servletRequest, user.email());
+        return user;
+    }
+
+    @PostMapping("/logout")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void logout(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        if (session != null) session.invalidate();
+    }
+
+    private void startSession(HttpServletRequest request, String email) {
+        HttpSession previous = request.getSession(false);
+        if (previous != null) previous.invalidate();
+        request.getSession(true).setAttribute("userEmail", email);
     }
 }
