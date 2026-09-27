@@ -36,8 +36,9 @@ public class SecurityConfig {
                 ))
                 .csrf(csrf -> csrf
                         .ignoringRequestMatchers(
-                                "/api/auth/**",
-                                "/api/reservations/**"
+                                "/api/auth/register",
+                                "/api/auth/login",
+                                "/api/auth/logout"
                         )
                 )
                 .formLogin(AbstractHttpConfigurer::disable)
@@ -51,7 +52,8 @@ public class SecurityConfig {
                         ).permitAll()
                         .requestMatchers(
                                 HttpMethod.GET,
-                                "/api/flights/**"
+                                "/api/flights/**",
+                                "/api/auth/csrf"
                         ).permitAll()
                         .requestMatchers(
                                 "/api/reservations/**"
