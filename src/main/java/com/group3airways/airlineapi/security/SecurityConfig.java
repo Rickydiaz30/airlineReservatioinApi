@@ -1,3 +1,5 @@
+
+
 package com.group3airways.airlineapi.security;
 
 import org.springframework.context.annotation.Bean;
@@ -44,7 +46,8 @@ public class SecurityConfig {
                         .requestMatchers(
                                 HttpMethod.POST,
                                 "/api/auth/register",
-                                "/api/auth/login"
+                                "/api/auth/login",
+                                "/api/auth/logout"
                         ).permitAll()
                         .requestMatchers(
                                 HttpMethod.GET,
